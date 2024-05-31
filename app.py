@@ -46,3 +46,19 @@ def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte
     finally:
         conn.close()
 
+
+#filtrado y busqueda#
+st.header("Buscar Clientes")
+buscar_nombre = st.text_input("Buscar por nombre")
+filtrar_servicio = st.selectbox("Filtrar por servicio", ["Todos"] + datos["servicio"].unique().tolist())
+
+# Filtrar datos
+datos_filtrados = datos
+if buscar_nombre:
+    datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(buscar_nombre, case=False)]
+if filtrar_servicio != "Todos":
+    datos_filtrados = datos_filtrados[datos_filtrados["servicio"] == filtrar_servicio]
+
+st.dataframe(datos_filtrados)
+
+
