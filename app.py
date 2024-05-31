@@ -22,3 +22,27 @@ if st.button("Agregar Cliente"):
 st.header("Clientes Registrados")
 datos = obtener_datos()
 st.dataframe(datos)
+
+# Validacion de datos
+if st.button("Agregar Cliente"):
+    if not nombre or not servicio or not atendido_por or not formula_tinte:
+        st.error("Por favor, completa todos los campos obligatorios.")
+    else:
+        insertar_cliente(nombre, servicio, costo, fecha.strftime('%Y-%m-%d'), atendido_por, formula_tinte)
+        st.success("Cliente agregado exitosamente!")
+
+#Manejo de errores
+def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte):
+    try:
+        conn = sqlite3.connect('salon.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO clientes (nombre, servicio, costo, fecha, atendido_por, formula_tinte)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (nombre, servicio, costo, fecha, atendido_por, formula_tinte))
+        conn.commit()
+    except sqlite3.Error as e:
+        st.error(f"Error al insertar en la base de datos: {e}")
+    finally:
+        conn.close()
+
