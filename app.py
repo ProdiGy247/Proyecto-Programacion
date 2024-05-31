@@ -5,14 +5,6 @@ from db import insertar_cliente, obtener_datos
 # Título de la aplicación
 st.title("Gestión de Clientes - Salón de Belleza")
 
-#Claves unicas para widgets
-if st.button("Agregar Cliente", key="btn_agregar_cliente"):
-    if not nombre or not servicio or not atendido_por or not formula_tinte:
-        st.error("Por favor, completa todos los campos obligatorios.")
-    else:
-        insertar_cliente(nombre, servicio, costo, fecha.strftime('%Y-%m-%d'), atendido_por, formula_tinte)
-        st.success("Cliente agregado exitosamente!", icon="✅")
-
 # Formulario para agregar clientes
 st.header("Agregar nuevo cliente")
 nombre = st.text_input("Nombre del Cliente", key="nombre_cliente")
@@ -34,15 +26,21 @@ st.header("Clientes Registrados")
 datos = obtener_datos()
 st.dataframe(datos)
 
-# Validacion de datos
-if st.button("Agregar Cliente"):
-    if not nombre or not servicio or not atendido_por or not formula_tinte:
-        st.error("Por favor, completa todos los campos obligatorios.")
-    else:
-        insertar_cliente(nombre, servicio, costo, fecha.strftime('%Y-%m-%d'), atendido_por, formula_tinte)
-        st.success("Cliente agregado exitosamente!")
+# Filtrado y búsqueda
+st.header("Buscar Clientes")
+buscar_nombre = st.text_input("Buscar por nombre", key="buscar_nombre")
+filtrar_servicio = st.selectbox("Filtrar por servicio", ["Todos"] + datos["servicio"].unique().tolist(), key="filtrar_servicio")
 
-#Manejo de errores
+# Filtrar datos
+datos_filtrados = datos
+if buscar_nombre:
+    datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(buscar_nombre, case=False)]
+if filtrar_servicio != "Todos":
+    datos_filtrados = datos_filtrados[datos_filtrados["servicio"] == filtrar_servicio]
+
+st.dataframe(datos_filtrados)
+
+# Manejo de errores en la base de datos
 def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte):
     try:
         conn = sqlite3.connect('salon.db')
@@ -56,20 +54,3 @@ def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte
         st.error(f"Error al insertar en la base de datos: {e}")
     finally:
         conn.close()
-
-
-#filtrado y busqueda#
-st.header("Buscar Clientes")
-buscar_nombre = st.text_input("Buscar por nombre")
-filtrar_servicio = st.selectbox("Filtrar por servicio", ["Todos"] + datos["servicio"].unique().tolist())
-
-# Filtrar datos
-datos_filtrados = datos
-if buscar_nombre:
-    datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(buscar_nombre, case=False)]
-if filtrar_servicio != "Todos":
-    datos_filtrados = datos_filtrados[datos_filtrados["servicio"] == filtrar_servicio]
-
-st.dataframe(datos_filtrados)
-
-
