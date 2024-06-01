@@ -1,31 +1,9 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
-from db import obtener_datos
+from db import obtener_datos, insertar_cliente
 
 # Título de la aplicación
 st.title("Gestión de Clientes - Salón de Belleza")
-
-# Función para insertar datos en la tabla
-
-
-def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte, celular):
-    try:
-        conn = sqlite3.connect('salon.db')  # Conectar a la base de datos
-        cursor = conn.cursor()  # Crear un cursor para ejecutar comandos SQL
-        cursor.execute('''
-            INSERT INTO clientes (nombre, servicio, costo, fecha, atendido_por, formula_tinte, celular)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (nombre, servicio, costo, fecha, atendido_por, formula_tinte, celular))  # Ejecutar la inserción
-        conn.commit()  # Confirmar los cambios en la base de datos
-    except sqlite3.Error as e:  # Capturar cualquier error de SQLite
-        # Mostrar el error en la interfaz de usuario
-        st.error(f"Error al insertar en la base de datos: {e}")
-        # Imprimir el error en la consola
-        print(f"Error al insertar en la base de datos: {e}")
-    finally:
-        conn.close()  # Asegurar que la conexión a la base de datos se cierre
-
 
 # Formulario para agregar clientes
 st.header("Agregar nuevo cliente")
@@ -51,19 +29,24 @@ st.header("Buscar Clientes")
 buscar_nombre = st.text_input("Buscar por nombre", key="buscar_nombre")
 
 # Obtener sugerencias para autocompletado
-sugerencias_celular = obtener_datos()["celular"].unique().tolist()
-celular_elegido = st.selectbox("Seleccionar número de celular", [
-                               ""] + sugerencias_celular)
+datos = obtener_datos()
+if 'celular' in datos.columns:
+    sugerencias_celular = datos["celular"].unique().tolist()
+    celular_elegido = st.selectbox("Seleccionar número de celular", [
+                                   ""] + sugerencias_celular)
+else:
+    st.error("La columna 'celular' no existe en los datos.")
 
-if buscar_nombre or celular_elegido:
+if buscar_nombre or (('celular' in datos.columns) and celular_elegido):
     st.header("Clientes Registrados")
     datos_filtrados = obtener_datos()
 
     if buscar_nombre:
         datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(
             buscar_nombre, case=False)]
-    if celular_elegido:
+    if 'celular' in datos_filtrados.columns and celular_elegido:
         datos_filtrados = datos_filtrados[datos_filtrados["celular"].str.contains(
             celular_elegido, case=False)]
 
     st.dataframe(datos_filtrados)
+
