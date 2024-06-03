@@ -27,3 +27,4 @@ def insertar_cliente(nombre, servicio, costo, fecha, atendido_por, formula_tinte
         'formula_tinte': formula_tinte,
         'celular': celular
     }).execute()
+
