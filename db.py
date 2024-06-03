@@ -1,3 +1,4 @@
+import supabase
 from supabase import create_client, Client
 import pandas as pd
 
