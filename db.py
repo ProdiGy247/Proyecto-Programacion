@@ -1,6 +1,6 @@
+import os
 from supabase import create_client, Client
 import pandas as pd
-import os 
 
 
 # Configuración de Supabase
