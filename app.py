@@ -27,25 +27,3 @@ if st.button("Agregar Cliente", key="btn_agregar_cliente"):
 # Filtrado y búsqueda
 st.header("Buscar Clientes")
 buscar_nombre = st.text_input("Buscar por nombre", key="buscar_nombre")
-
-# Obtener sugerencias para autocompletado
-datos = obtener_datos()
-if 'celular' in datos.columns:
-    sugerencias_celular = datos["celular"].unique().tolist()
-    celular_elegido = st.selectbox("Seleccionar número de celular", [
-                                   ""] + sugerencias_celular)
-else:
-    st.error("La columna 'celular' no existe en los datos.")
-
-if buscar_nombre or (('celular' in datos.columns) and celular_elegido):
-    st.header("Clientes Registrados")
-    datos_filtrados = obtener_datos()
-
-    if buscar_nombre:
-        datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(
-            buscar_nombre, case=False)]
-    if 'celular' in datos_filtrados.columns and celular_elegido:
-        datos_filtrados = datos_filtrados[datos_filtrados["celular"].str.contains(
-            celular_elegido, case=False)]
-
-    st.dataframe(datos_filtrados)
