@@ -13,9 +13,12 @@ st.title('Sistema de Gestión de Clientes - Salón de Belleza')
 st.header('Agregar Nuevo Cliente')
 nombre = st.text_input('Nombre')
 telefono = st.text_input('Teléfono')
-email = st.text_input('Email')
+servicio = st.text_input('Servicio Realizado')
+costo = st.text_input('Costo')
+formula = st.text_input('formula')
+nota = st.text_input('nota')
 if st.button('Agregar Cliente'):
-    db.agregar_cliente(nombre, telefono, email)
+    db.agregar_cliente(nombre, telefono, servicio)
     st.success('Cliente agregado exitosamente')
 
 # Sección para ver clientes existentes
