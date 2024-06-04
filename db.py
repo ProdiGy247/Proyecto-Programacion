@@ -8,7 +8,11 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT,
             telefono TEXT,
-            email TEXT
+            servicio TEXT,
+            costo TEXT,
+            nota TEXT,
+            formula TEXT,
+            imagen BLOB
         )
     ''')
     c.execute('''
