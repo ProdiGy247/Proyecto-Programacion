@@ -1,39 +1,99 @@
 import streamlit as st
-import pandas as pd
-from db import obtener_datos, insertar_cliente
+import sqlite3
+from PIL import Image
+import io
 
-# Título de la aplicación
-st.title("Gestión de Clientes - Salón de Belleza")
+# Conexión a la base de datos
+def get_connection():
+    conn = sqlite3.connect('salon.db')
+    return conn
 
-# Formulario para agregar clientes
-st.header("Agregar nuevo cliente")
-nombre = st.text_input("Nombre del Cliente", key="nombre_cliente")
-servicio = st.text_input("Servicio Realizado", key="servicio_cliente")
-costo = st.number_input("Costo del Servicio", min_value=0.0, format="%.2f", key="costo_servicio")
-fecha = st.date_input("Fecha de Visita", key="fecha_visita")
-atendido_por = st.text_input("Atendido por", key="atendido_por")
-formula_tinte = st.text_area("Fórmula del Tinte", key="formula_tinte")
-celular = st.text_input("Número de Celular", key="celular_cliente")
+# Función para agregar un nuevo cliente
+def agregar_cliente(nombre, telefono, email):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO clientes (nombre, telefono, email)
+        VALUES (?, ?, ?)
+    ''', (nombre, telefono, email))
+    conn.commit()
+    conn.close()
 
-if st.button("Agregar Cliente", key="btn_agregar_cliente"):
-    if not nombre or not servicio or not atendido_por or not formula_tinte or not celular:
-        st.error("Por favor, completa todos los campos obligatorios.")
-    else:
-        insertar_cliente(nombre, servicio, costo, fecha.strftime('%Y-%m-%d'), atendido_por, formula_tinte, celular)
-        st.success("Cliente agregado exitosamente!")
+# Función para obtener todos los clientes
+def obtener_clientes():
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT * FROM clientes')
+    clientes = c.fetchall()
+    conn.close()
+    return clientes
 
-# Filtrado y búsqueda
-st.header("Buscar Clientes")
-buscar_nombre = st.text_input("Buscar por nombre", key="buscar_nombre")
-buscar_celular = st.text_input("Buscar por número de celular", key="buscar_celular")
+# Función para agregar una nueva visita
+def agregar_visita(cliente_id, fecha, servicio, costo, formula, notas, imagen):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO visitas (cliente_id, fecha, servicio, costo, formula, notas, imagen)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (cliente_id, fecha, servicio, costo, formula, notas, imagen))
+    conn.commit()
+    conn.close()
 
-if buscar_nombre or buscar_celular:
-    st.header("Clientes Registrados")
-    datos_filtrados = obtener_datos()
+# Función para obtener visitas por cliente
+def obtener_visitas(cliente_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('''
+        SELECT * FROM visitas WHERE cliente_id = ?
+    ''', (cliente_id,))
+    visitas = c.fetchall()
+    conn.close()
+    return visitas
 
-    if buscar_nombre:
-        datos_filtrados = datos_filtrados[datos_filtrados["nombre"].str.contains(buscar_nombre, case=False)]
-    if buscar_celular:
-        datos_filtrados = datos_filtrados[datos_filtrados["celular"].str.contains(buscar_celular, case=False)]
+# Interfaz de Streamlit
+st.title('Sistema de Gestión de Clientes - Salón de Belleza')
 
-    st.dataframe(datos_filtrados)
+# Sección para agregar nuevo cliente
+st.header('Agregar Nuevo Cliente')
+nombre = st.text_input('Nombre')
+telefono = st.text_input('Teléfono')
+email = st.text_input('Email')
+if st.button('Agregar Cliente'):
+    agregar_cliente(nombre, telefono, email)
+    st.success('Cliente agregado exitosamente')
+
+# Sección para ver clientes existentes
+st.header('Clientes Existentes')
+clientes = obtener_clientes()
+for cliente in clientes:
+    st.subheader(f"{cliente[1]} (ID: {cliente[0]})")
+    st.write(f"Teléfono: {cliente[2]}")
+    st.write(f"Email: {cliente[3]}")
+    
+    # Sección para agregar una visita
+    st.write('Agregar Visita:')
+    fecha = st.date_input('Fecha')
+    servicio = st.text_input('Servicio')
+    costo = st.number_input('Costo', min_value=0.0, format="%.2f")
+    formula = st.text_area('Fórmula Utilizada')
+    notas = st.text_area('Notas')
+    imagen = st.file_uploader('Subir Imagen', type=['jpg', 'jpeg', 'png'])
+    
+    imagen_bytes = None
+    if imagen:
+        imagen_bytes = imagen.read()
+    
+    if st.button(f'Agregar Visita para {cliente[1]}'):
+        agregar_visita(cliente[0], fecha, servicio, costo, formula, notas, imagen_bytes)
+        st.success('Visita agregada exitosamente')
+    
+    # Mostrar visitas del cliente
+    st.write('Historial de Visitas:')
+    visitas = obtener_visitas(cliente[0])
+    for visita in visitas:
+        st.write(f"Fecha: {visita[2]}, Servicio: {visita[3]}, Costo: ${visita[4]:.2f}")
+        st.write(f"Fórmula: {visita[5]}")
+        st.write(f"Notas: {visita[6]}")
+        if visita[7]:
+            st.image(Image.open(io.BytesIO(visita[7])), caption='Imagen', use_column_width=True)
+
