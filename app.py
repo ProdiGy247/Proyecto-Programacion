@@ -109,7 +109,6 @@ if choice == "Agregar Cliente y Registrar Visita":
                     if imagen_path:
                         os.remove(imagen_path)
                     st.success(f"Visita registrada exitosamente para {cliente_id}")
-
         else:
             if st.button("Agregar Cliente"):
                 if nombre:
@@ -144,6 +143,60 @@ if choice == "Agregar Cliente y Registrar Visita":
                         st.success(f"Visita registrada exitosamente para {cliente_id}")
                 else:
                     st.error("El nombre es obligatorio")
+
+    empleados = obtener_empleados()
+    servicios = obtener_servicios()
+
+    empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
+    servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
+
+    atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
+    servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
+    precio = st.number_input("Precio", min_value=0.0, format="%.2f")
+    formula = st.text_area("Fórmula (opcional)")
+    notas = st.text_area("Notas (opcional)")
+    imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
+
+    if st.button("Agregar Cliente y Registrar Visita"):
+        if nombre:
+            clientes = buscar_cliente(nombre=nombre) if nombre else buscar_cliente(telefono=telefono)
+            if clientes:
+                st.warning("Cliente ya registrado:")
+                st.write(clientes)
+
+                if st.button("Registrar Visita para Cliente Existente"):
+                    clientes_options = {cliente['nombre']: cliente['id'] for cliente in clientes}
+                    cliente_id = st.selectbox("Seleccionar Cliente", options=list(clientes_options.keys()))
+                    cliente_id = clientes_options[cliente_id]
+                    
+                    imagen_path = None
+                    if imagen:
+                        imagen_path = f"temp_{imagen.name}"
+                        with open(imagen_path, "wb") as f:
+                            f.write(imagen.getbuffer())
+                    
+                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                    if imagen_path:
+                        os.remove(imagen_path)
+                    st.success(f"Visita registrada exitosamente para {cliente_id}")
+            else:
+                nuevo_cliente = agregar_cliente(nombre, telefono if telefono else None)
+                st.success(f"Cliente {nombre} agregado exitosamente")
+                
+                cliente_id = nuevo_cliente[0]['id']
+                
+                imagen_path = None
+                if imagen:
+                    imagen_path = f"temp_{imagen.name}"
+                    with open(imagen_path, "wb") as f:
+                        f.write(imagen.getbuffer())
+                
+                visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                if imagen_path:
+                    os.remove(imagen_path)
+                st.success(f"Visita registrada exitosamente para {cliente_id}")
+        else:
+            st.error("El nombre es obligatorio")
 
 elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
@@ -183,3 +236,4 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
