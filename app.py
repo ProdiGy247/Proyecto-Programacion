@@ -74,7 +74,7 @@ if choice == "Agregar Cliente y Registrar Visita":
     nombre = st.text_input("Nombre del cliente")
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
     fecha = st.date_input("Fecha")
-    hora = st.time_input("Hora")
+    hora = st.time_input("Hora", format="hh:mm A")
     fecha_hora = datetime.combine(fecha, hora)
 
     buscar_button = st.button("Buscar Cliente")
@@ -240,6 +240,7 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
 
 
 
