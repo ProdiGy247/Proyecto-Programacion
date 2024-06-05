@@ -236,6 +236,23 @@ elif choice == "Editar Cliente":
         cliente = editar_cliente(cliente_options[cliente_id], nombre, telefono if telefono else None)
         st.success(f"Cliente {nombre} actualizado exitosamente")
 
+import streamlit as st
+from datetime import datetime
+
+# Interfaz de Streamlit
+st.title("Demo de Entrada de Hora en Formato 12 Horas")
+
+# Obtener la hora ingresada por el usuario
+hora_input = st.time_input("Ingrese la hora")
+
+# Si se ha seleccionado una hora, procesarla y mostrarla en formato de 12 horas con AM/PM
+if hora_input:
+    # Convertir la hora a una cadena en formato HH:MM AM/PM
+    hora_string = hora_input.strftime("%I:%M %p")
+    # Mostrar la hora en formato de 12 horas con AM/PM
+    st.write(f"La hora ingresada es: {hora_string}")
+
+
 st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
