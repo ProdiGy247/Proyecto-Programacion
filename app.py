@@ -74,8 +74,7 @@ if choice == "Agregar Cliente y Registrar Visita":
     nombre = st.text_input("Nombre del cliente")
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
     fecha = st.date_input("Fecha")
-    hora = st.time_input("Hora", format="hh:mm A")
-    fecha_hora = datetime.combine(fecha, hora)
+    hora = st.time_input("Hora")
 
     buscar_button = st.button("Buscar Cliente")
     
@@ -156,7 +155,7 @@ if choice == "Agregar Cliente y Registrar Visita":
     servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
 
     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
-    servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
+    servicio_id = st.selectbox("Servicio", options=list(servservicio_options.keys()))
     precio = st.number_input("Precio", min_value=0, format="%d")
     formula = st.text_area("Fórmula (opcional)")
     notas = st.text_area("Notas (opcional)")
@@ -173,13 +172,13 @@ if choice == "Agregar Cliente y Registrar Visita":
                     clientes_options = {cliente['nombre']: cliente['id'] for cliente in clientes}
                     cliente_id = st.selectbox("Seleccionar Cliente", options=list(clientes_options.keys()))
                     cliente_id = clientes_options[cliente_id]
-                    
+
                     imagen_path = None
                     if imagen:
                         imagen_path = f"temp_{imagen.name}"
                         with open(imagen_path, "wb") as f:
                             f.write(imagen.getbuffer())
-                    
+
                     visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                     if imagen_path:
                         os.remove(imagen_path)
@@ -187,15 +186,15 @@ if choice == "Agregar Cliente y Registrar Visita":
             else:
                 nuevo_cliente = agregar_cliente(nombre, telefono if telefono else None)
                 st.success(f"Cliente {nombre} agregado exitosamente")
-                
+
                 cliente_id = nuevo_cliente[0]['id']
-                
+
                 imagen_path = None
                 if imagen:
                     imagen_path = f"temp_{imagen.name}"
                     with open(imagen_path, "wb") as f:
                         f.write(imagen.getbuffer())
-                
+
                 visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                 if imagen_path:
                     os.remove(imagen_path)
@@ -207,13 +206,13 @@ elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
     criterio = st.selectbox("Buscar por", ["Nombre", "Teléfono"])
     buscar_por = st.text_input(f"Ingresar {criterio}")
-    
+
     if st.button("Buscar"):
         if criterio == "Nombre":
             clientes = buscar_cliente(nombre=buscar_por)
         elif criterio == "Teléfono":
             clientes = buscar_cliente(telefono=buscar_por)
-        
+
         if clientes:
             st.write(clientes)
         else:
@@ -235,23 +234,6 @@ elif choice == "Editar Cliente":
     if submit_button:
         cliente = editar_cliente(cliente_options[cliente_id], nombre, telefono if telefono else None)
         st.success(f"Cliente {nombre} actualizado exitosamente")
-
-import streamlit as st
-from datetime import datetime
-
-# Interfaz de Streamlit
-st.title("Demo de Entrada de Hora en Formato 12 Horas")
-
-# Obtener la hora ingresada por el usuario
-hora_input = st.time_input("Ingrese la hora")
-
-# Si se ha seleccionado una hora, procesarla y mostrarla en formato de 12 horas con AM/PM
-if hora_input:
-    # Convertir la hora a una cadena en formato HH:MM AM/PM
-    hora_string = hora_input.strftime("%I:%M %p")
-    # Mostrar la hora en formato de 12 horas con AM/PM
-    st.write(f"La hora ingresada es: {hora_string}")
-
 
 st.sidebar.markdown("""
     ## Información
