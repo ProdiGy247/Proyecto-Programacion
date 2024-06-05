@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import base64
 import os
+from datetime import datetime
 
 # Configuración de Supabase
 url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
@@ -14,7 +15,7 @@ def agregar_cliente(nombre, telefono=None):
     response = supabase.table("clientes").insert(data).execute()
     return response.data
 
-def registrar_visita(cliente_id, atendido_por, servicio_id, precio, formula=None, notas=None, imagen_path=None):
+def registrar_visita(cliente_id, atendido_por, servicio_id, precio, fecha_hora, formula=None, notas=None, imagen_path=None):
     imagen_data = None
     if imagen_path and os.path.isfile(imagen_path):
         with open(imagen_path, "rb") as image_file:
@@ -25,6 +26,7 @@ def registrar_visita(cliente_id, atendido_por, servicio_id, precio, formula=None
         "atendido_por": atendido_por,
         "servicio_id": servicio_id,
         "precio": precio,
+        "fecha_hora": fecha_hora.isoformat(),
         "formula": formula,
         "notas": notas,
         "imagen": imagen_data
@@ -71,6 +73,7 @@ if choice == "Agregar Cliente y Registrar Visita":
     st.subheader("Agregar Cliente y Registrar Visita")
     nombre = st.text_input("Nombre del cliente")
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
+    fecha_hora = st.date_input("Fecha") + st.time_input("Hora")
 
     buscar_button = st.button("Buscar Cliente")
     
@@ -93,7 +96,7 @@ if choice == "Agregar Cliente y Registrar Visita":
 
                 atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
                 servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
-                precio = st.number_input("Precio", min_value=0.0, format="%.2f")
+                precio = st.number_input("Precio", min_value=0, format="%d")
                 formula = st.text_area("Fórmula (opcional)")
                 notas = st.text_area("Notas (opcional)")
                 imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
@@ -105,7 +108,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                         with open(imagen_path, "wb") as f:
                             f.write(imagen.getbuffer())
                     
-                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                     if imagen_path:
                         os.remove(imagen_path)
                     st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -125,7 +128,7 @@ if choice == "Agregar Cliente y Registrar Visita":
 
                     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
                     servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
-                    precio = st.number_input("Precio", min_value=0.0, format="%.2f")
+                    precio = st.number_input("Precio", min_value=0, format="%d")
                     formula = st.text_area("Fórmula (opcional)")
                     notas = st.text_area("Notas (opcional)")
                     imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
@@ -137,7 +140,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                             with open(imagen_path, "wb") as f:
                                 f.write(imagen.getbuffer())
                         
-                        visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                        visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                         if imagen_path:
                             os.remove(imagen_path)
                         st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -152,7 +155,7 @@ if choice == "Agregar Cliente y Registrar Visita":
 
     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
     servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
-    precio = st.number_input("Precio", min_value=0.0, format="%.2f")
+    precio = st.number_input("Precio", min_value=0, format="%d")
     formula = st.text_area("Fórmula (opcional)")
     notas = st.text_area("Notas (opcional)")
     imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
@@ -175,7 +178,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                         with open(imagen_path, "wb") as f:
                             f.write(imagen.getbuffer())
                     
-                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                     if imagen_path:
                         os.remove(imagen_path)
                     st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -191,7 +194,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                     with open(imagen_path, "wb") as f:
                         f.write(imagen.getbuffer())
                 
-                visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, formula if formula else None, notas if notas else None, imagen_path)
+                visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                 if imagen_path:
                     os.remove(imagen_path)
                 st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -236,4 +239,5 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
 
