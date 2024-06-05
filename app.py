@@ -2,7 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import base64
 import os
-from datetime import datetime
+from datetime import datetime, date, time
 
 # Configuración de Supabase
 url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
@@ -73,7 +73,9 @@ if choice == "Agregar Cliente y Registrar Visita":
     st.subheader("Agregar Cliente y Registrar Visita")
     nombre = st.text_input("Nombre del cliente")
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
-    fecha_hora = st.date_input("Fecha") + st.time_input("Hora")
+    fecha = st.date_input("Fecha")
+    hora = st.time_input("Hora")
+    fecha_hora = datetime.combine(fecha, hora)
 
     buscar_button = st.button("Buscar Cliente")
     
@@ -203,11 +205,10 @@ if choice == "Agregar Cliente y Registrar Visita":
 
 elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
-    criterio = st.radio("Buscar por", ("Nombre", "Teléfono"))
+    criterio = st.selectbox("Buscar por", ["Nombre", "Teléfono"])
     buscar_por = st.text_input(f"Ingresar {criterio}")
-    buscar_button = st.button("Buscar")
-
-    if buscar_button:
+    
+    if st.button("Buscar"):
         if criterio == "Nombre":
             clientes = buscar_cliente(nombre=buscar_por)
         elif criterio == "Teléfono":
@@ -239,5 +240,6 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
 
 
