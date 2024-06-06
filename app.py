@@ -5,8 +5,8 @@ import os
 from datetime import datetime, date, time
 
 # Configuración de Supabase
-url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyd3VmYmp2a2ZueWZqeWp1enVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTcyNzUyNDQsImV4cCI6MjAzMjg1MTI0NH0.OI88wwe7zTNLMdmaQBW7TRjoK3cU0Mx3koFs0Sam52Q"
+url = "https://your-project.supabase.co"
+key = "your-anon-key"
 supabase: Client = create_client(url, key)
 
 # Funciones de la Base de Datos
@@ -15,7 +15,7 @@ def agregar_cliente(nombre, telefono=None):
     response = supabase.table("clientes").insert(data).execute()
     return response.data
 
-def registrar_visita(cliente_id, atendido_por, servicio_id, precio, fecha_hora, formula=None, notas=None, imagen_path=None):
+def registrar_visita(cliente_id, atendido_por, servicio, precio, fecha_hora, formula=None, notas=None, imagen_path=None):
     imagen_data = None
     if imagen_path and os.path.isfile(imagen_path):
         with open(imagen_path, "rb") as image_file:
@@ -24,7 +24,7 @@ def registrar_visita(cliente_id, atendido_por, servicio_id, precio, fecha_hora, 
     data = {
         "cliente_id": cliente_id,
         "atendido_por": atendido_por,
-        "servicio_id": servicio_id,
+        "servicio": servicio,
         "precio": precio,
         "fecha_hora": fecha_hora.isoformat(),
         "formula": formula,
@@ -56,8 +56,9 @@ def editar_cliente(cliente_id, nombre=None, telefono=None):
     return response.data
 
 def obtener_servicios():
-    response = supabase.table("servicios").select("*").execute()
-    return response.data
+    # Aquí puedes implementar la función para obtener los servicios de tu base de datos
+    # Por ahora, retornamos una lista vacía
+    return []
 
 def obtener_empleados():
     response = supabase.table("empleados").select("*").execute()
@@ -90,13 +91,11 @@ if choice == "Agregar Cliente y Registrar Visita":
                 cliente_id = clientes_options[cliente_id]
                 
                 empleados = obtener_empleados()
-                servicios = obtener_servicios()
 
                 empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-                servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
 
                 atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
-                servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
+                servicio = st.text_input("Servicio")
                 precio = st.number_input("Precio", min_value=0, format="%d")
                 formula = st.text_area("Fórmula (opcional)")
                 notas = st.text_area("Notas (opcional)")
@@ -109,7 +108,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                         with open(imagen_path, "wb") as f:
                             f.write(imagen.getbuffer())
                     
-                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
+                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio, precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                     if imagen_path:
                         os.remove(imagen_path)
                     st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -122,13 +121,11 @@ if choice == "Agregar Cliente y Registrar Visita":
                     cliente_id = nuevo_cliente[0]['id']
                     
                     empleados = obtener_empleados()
-                    servicios = obtener_servicios()
 
                     empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-                    servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
 
                     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
-                    servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
+                    servicio = st.text_input("Servicio")
                     precio = st.number_input("Precio", min_value=0, format="%d")
                     formula = st.text_area("Fórmula (opcional)")
                     notas = st.text_area("Notas (opcional)")
@@ -141,7 +138,7 @@ if choice == "Agregar Cliente y Registrar Visita":
                             with open(imagen_path, "wb") as f:
                                 f.write(imagen.getbuffer())
                         
-                        visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
+                        visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio, precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
                         if imagen_path:
                             os.remove(imagen_path)
                         st.success(f"Visita registrada exitosamente para {cliente_id}")
@@ -149,59 +146,15 @@ if choice == "Agregar Cliente y Registrar Visita":
                     st.error("El nombre es obligatorio")
 
     empleados = obtener_empleados()
-    servicios = obtener_servicios()
 
     empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-    servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
 
     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
-    servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
-    precio = st.number_input("Precio", min_value=0, format="%d")
-    formula = st.text_area("Fórmula (opcional)")
-    notas = st.text_area("Notas (opcional)")
-    imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
 
-    if st.button("Agregar Cliente y Registrar Visita"):
-        if nombre:
-            clientes = buscar_cliente(nombre=nombre) if nombre else buscar_cliente(telefono=telefono)
-            if clientes:
-                st.warning("Cliente ya registrado:")
-                st.write(clientes)
-
-                if st.button("Registrar Visita para Cliente Existente"):
-                    clientes_options = {cliente['nombre']: cliente['id'] for cliente in clientes}
-                    cliente_id = st.selectbox("Seleccionar Cliente", options=list(clientes_options.keys()))
-                    cliente_id = clientes_options[cliente_id]
-
-                    imagen_path = None
-                    if imagen:
-                        imagen_path = f"temp_{imagen.name}"
-                        with open(imagen_path, "wb") as f:
-                            f.write(imagen.getbuffer())
-
-                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
-                    if imagen_path:
-                        os.remove(imagen_path)
-                    st.success(f"Visita registrada exitosamente para {cliente_id}")
-            else:
-                nuevo_cliente = agregar_cliente(nombre, telefono if telefono else None)
-                st.success(f"Cliente {nombre} agregado exitosamente")
-
-                cliente_id = nuevo_cliente[0]['id']
-
-                imagen_path = None
-                if imagen:
-                    imagen_path = f"temp_{imagen.name}"
-                    with open(imagen_path, "wb") as f:
-                        f.write(imagen.getbuffer())
-
-                visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicio_options[servicio_id], precio, fecha_hora, formula if formula else None, notas if notas else None, imagen_path)
-                if imagen_path:
-                    os.remove(imagen_path)
-                st.success(f"Visita registrada exitosamente para {cliente_id}")
-        else:
-            st.error("El nombre es obligatorio")
-
+elif choice == "Buscar Cliente":
+    st.subheader("Buscar Cliente")
+    criter
+    
 elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
     criterio = st.selectbox("Buscar por", ["Nombre", "Teléfono"])
@@ -239,6 +192,7 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
 
 
 
