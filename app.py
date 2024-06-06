@@ -5,8 +5,8 @@ import os
 from datetime import datetime, date, time
 
 # Configuración de Supabase
-url = "https://your-project.supabase.co"
-key = "your-anon-key"
+url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyd3VmYmp2a2ZueWZqeWp1enVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTcyNzUyNDQsImV4cCI6MjAzMjg1MTI0NH0.OI88wwe7zTNLMdmaQBW7TRjoK3cU0Mx3koFs0Sam52Q"
 supabase: Client = create_client(url, key)
 
 # Funciones de la Base de Datos
