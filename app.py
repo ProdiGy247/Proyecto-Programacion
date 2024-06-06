@@ -155,7 +155,7 @@ if choice == "Agregar Cliente y Registrar Visita":
     servicio_options = {servicio['nombre']: servicio['id'] for servicio in servicios}
 
     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
-    servicio_id = st.selectbox("Servicio", options=list(servservicio_options.keys()))
+    servicio_id = st.selectbox("Servicio", options=list(servicio_options.keys()))
     precio = st.number_input("Precio", min_value=0, format="%d")
     formula = st.text_area("Fórmula (opcional)")
     notas = st.text_area("Notas (opcional)")
