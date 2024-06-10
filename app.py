@@ -85,10 +85,9 @@ if choice == "Agregar Cliente y Registrar Visita":
                 cliente_id = clientes_options[cliente_id]
                 
                 empleados = obtener_empleados()
-
                 empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-
                 atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
+                
                 servicios = st.text_area("Servicios realizados (separados por comas)")
                 precio = st.number_input("Precio", min_value=0, format="%d")
                 formula = st.text_area("Fórmula (opcional)")
@@ -115,10 +114,9 @@ if choice == "Agregar Cliente y Registrar Visita":
                     cliente_id = nuevo_cliente[0]['id']
                     
                     empleados = obtener_empleados()
-
                     empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-
                     atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
+                    
                     servicios = st.text_area("Servicios realizados (separados por comas)")
                     precio = st.number_input("Precio", min_value=0, format="%d")
                     formula = st.text_area("Fórmula (opcional)")
@@ -138,12 +136,36 @@ if choice == "Agregar Cliente y Registrar Visita":
                         st.success(f"Visita registrada exitosamente para {cliente_id}")
                 else:
                     st.error("El nombre es obligatorio")
+    else:
+        empleados = obtener_empleados()
+        empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
+        atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
+        servicios = st.text_area("Servicios realizados (separados por comas)")
+        precio = st.number_input("Precio", min_value=0, format="%d")
+        formula = st.text_area("Fórmula (opcional)")
+        notas = st.text_area("Notas (opcional)")
+        imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
 
-    empleados = obtener_empleados()
+        if st.button("Agregar Cliente"):
+            if nombre:
+                nuevo_cliente = agregar_cliente(nombre, telefono if telefono else None)
+                st.success(f"Cliente {nombre} agregado exitosamente")
 
-    empleado_options = {empleado['nombre']: empleado['id'] for empleado in empleados}
-
-    atendido_por = st.selectbox("Atendido por", options=list(empleado_options.keys()))
+                cliente_id = nuevo_cliente[0]['id']
+                
+                if st.button("Registrar Visita"):
+                    imagen_path = None
+                    if imagen:
+                        imagen_path = f"temp_{imagen.name}"
+                        with open(imagen_path, "wb") as f:
+                            f.write(imagen.getbuffer())
+                    
+                    visita = registrar_visita(cliente_id, empleado_options[atendido_por], servicios, precio, fecha, formula if formula else None, notas if notas else None, imagen_path)
+                    if imagen_path:
+                        os.remove(imagen_path)
+                    st.success(f"Visita registrada exitosamente para {cliente_id}")
+            else:
+                st.error("El nombre es obligatorio")
 
 elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
@@ -182,6 +204,7 @@ st.sidebar.markdown("""
     ## Información
     Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
 """)
+
 
 
 
