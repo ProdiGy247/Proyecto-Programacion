@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client, Client
 import base64
 import os
+from datetime import date
 
 # Configuración de Supabase
 url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
