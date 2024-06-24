@@ -7,8 +7,6 @@ from datetime import date
 # Configuración de Supabase
 url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyd3VmYmp2a2ZueWZqeWp1enVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTcyNzUyNDQsImV4cCI6MjAzMjg1MTI0NH0.OI88wwe7zTNLMdmaQBW7TRjoK3cU0Mx3koFs0Sam52Q"
-supabase: Client = create_client(url, key)
-supabase: Client = create_client(url, key)
 
 # Funciones de la Base de Datos
 def agregar_cliente(nombre, telefono=None, fecha_registro=None, servicios=None, precio=None, formula=None, notas=None, imagen=None, atendido_por=None):
