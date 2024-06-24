@@ -9,58 +9,74 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxy
 supabase: Client = create_client(url, key)
 
 # Funciones de la Base de Datos
-def agregar_cliente(nombre, telefono=None, fecha=None, servicios=None, formula=None, precio=None, notas=None):
+def agregar_cliente(nombre, telefono=None, fecha_registro=None, servicios=None, precio=None, formula=None, notas=None, imagen=None, atendido_por=None):
     data = {
         "nombre": nombre,
         "telefono": telefono,
-        "fecha": fecha,
+        "fecha_registro": fecha_registro,
         "servicios": servicios,
-        "formula": formula,
         "precio": precio,
-        "notas": notas
+        "formula": formula,
+        "notas": notas,
+        "imagen": imagen,
+        "atendido_por": atendido_por
     }
     response = supabase.table("clientes").insert(data).execute()
-    return response.data
+    return response.data[0] if response.data else None
 
-def agregar_imagen(cliente_id, imagen_path):
-    if os.path.isfile(imagen_path):
+def agregar_visita(cliente_id, fecha, servicios, precio, formula, atendido_por, imagen_path=None):
+    data = {
+        "cliente_id": cliente_id,
+        "fecha": fecha,
+        "servicios": servicios,
+        "precio": precio,
+        "formula": formula,
+        "atendido_por": atendido_por
+    }
+    if imagen_path and os.path.isfile(imagen_path):
         with open(imagen_path, "rb") as image_file:
             imagen_data = base64.b64encode(image_file.read()).decode()
-        
+        data["imagen"] = imagen_data
+    response = supabase.table("visitas").insert(data).execute()
+    return response.data
+
+def guardar_imagen(cliente_id, imagen_path):
+    if imagen_path and os.path.isfile(imagen_path):
+        with open(imagen_path, "rb") as image_file:
+            imagen_data = image_file.read()
         data = {
             "cliente_id": cliente_id,
-            "imagen": imagen_data
+            "imagen_data": imagen_data
         }
         response = supabase.table("imagenes").insert(data).execute()
         return response.data
-    else:
-        raise FileNotFoundError(f"No se encontró el archivo {imagen_path}")
+    return None
 
 def obtener_empleados():
     response = supabase.table("empleados").select("nombre").execute()
     empleados = [empleado['nombre'] for empleado in response.data]
     return empleados
 
-def obtener_nombres_clientes():
-    response = supabase.table("clientes").select("nombre").execute()
-    nombres = [cliente['nombre'] for cliente in response.data]
-    return nombres
+def obtener_clientes():
+    response = supabase.table("clientes").select("id, nombre").execute()
+    return response.data
 
-def filtrar_nombres(nombres, consulta):
-    return [nombre for nombre in nombres if consulta.lower() in nombre.lower()]
+def obtener_historial(cliente_id):
+    response = supabase.table("visitas").select("*").eq("cliente_id", cliente_id).execute()
+    return response.data
 
 # Interfaz de Streamlit
 st.title("Sistema de Gestión de Clientes")
 
-menu = ["Agregar Cliente", "Buscar Cliente", "Editar Cliente"]
+menu = ["Agregar Cliente y Visita", "Buscar Cliente", "Ver Historial", "Editar Cliente"]
 choice = st.sidebar.selectbox("Menu", menu)
 
-if choice == "Agregar Cliente":
+if choice == "Agregar Cliente y Visita":
     st.subheader("Agregar Cliente y Registrar Visita")
     
     nombre = st.text_input("Nombre del cliente")
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
-    fecha = st.date_input("Fecha")
+    fecha = st.date_input("Fecha de visita", value=date.today())
     
     empleados = obtener_empleados()
     if empleados:
@@ -75,75 +91,78 @@ if choice == "Agregar Cliente":
     notas = st.text_area("Notas (opcional)")
     imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
 
-    if st.button("Agregar Cliente"):
+    if st.button("Registrar"):
         if nombre:
-            nuevo_cliente = agregar_cliente(nombre, telefono if telefono else None, fecha, servicios, formula, precio, notas)
-            st.success(f"Cliente {nombre} agregado exitosamente")
-
-            cliente_id = nuevo_cliente[0]['id']
+            # Verificar si el cliente ya existe
+            clientes = obtener_clientes()
+            cliente_existente = next((c for c in clientes if c['nombre'] == nombre), None)
             
-            if imagen:
-                imagen_path = f"temp_{imagen.name}"
-                with open(imagen_path, "wb") as f:
-                    f.write(imagen.getbuffer())
+            if cliente_existente:
+                cliente_id = cliente_existente['id']
+                st.warning(f"El cliente {nombre} ya existe. Registrando visita.")
                 
-                agregar_imagen(cliente_id, imagen_path)
-                os.remove(imagen_path)
-                
-            st.success(f"Visita registrada exitosamente para {cliente_id}")
-        else:
-            st.error("El nombre es obligatorio")
+                agregar_visita(cliente_id, fecha, servicios, precio, formula, atendido_por, imagen.name if imagen else None)
+                if imagen:
+                    guardar_imagen(cliente_id, imagen.name)
+                st.success(f"Visita registrada exitosamente para {nombre}")
+            else:
+                nueva_imagen = None
+                if imagen and os.path.isfile(imagen.name):
+                    nueva_imagen = imagen.name
+                cliente = agregar_cliente(nombre, telefono, fecha, servicios, precio, formula, notas, nueva_imagen, atendido_por)
+                if imagen:
+                    guardar_imagen(cliente['id'], imagen.name)
+                st.success(f"Cliente y visita registrada exitosamente para {nombre}")
 
 elif choice == "Buscar Cliente":
     st.subheader("Buscar Cliente")
-    nombres = obtener_nombres_clientes()
-    nombre_input = st.text_input("Ingresar nombre del cliente")
-
-    if nombre_input:
-        coincidencias = filtrar_nombres(nombres, nombre_input)
-        if coincidencias:
-            cliente_seleccionado = st.selectbox("Clientes encontrados", coincidencias)
-            if cliente_seleccionado:
-                st.write(f"Cliente seleccionado: {cliente_seleccionado}")
+    search_term = st.text_input("Ingrese el nombre o teléfono del cliente")
+    
+    if search_term:
+        clientes = obtener_clientes()
+        resultado_busqueda = [cliente for cliente in clientes if search_term.lower() in cliente['nombre'].lower() or search_term in cliente['telefono']]
+        
+        if resultado_busqueda:
+            for cliente in resultado_busqueda:
+                st.write(f"Nombre: {cliente['nombre']}, Teléfono: {cliente['telefono']}")
         else:
-            st.write("No se encontraron coincidencias")
+            st.warning("No se encontraron resultados.")
+            
+elif choice == "Ver Historial":
+    st.subheader("Ver Historial")
+    cliente_id = st.text_input("Ingrese el ID del cliente")
+    
+    if cliente_id:
+        historial = obtener_historial(cliente_id)
+        
+        if historial:
+            for visita in historial:
+                st.write(f"Fecha: {visita['fecha']}, Servicios: {visita['servicios']}, Precio: {visita['precio']}, Atendido por: {visita['atendido_por']}")
+        else:
+            st.warning("No se encontraron visitas para este cliente.")
 
 elif choice == "Editar Cliente":
     st.subheader("Editar Cliente")
-    nombres = obtener_nombres_clientes()
-    cliente_seleccionado = st.selectbox("Seleccionar Cliente", options=nombres)
+    cliente_id = st.text_input("Ingrese el ID del cliente a editar")
+    
+    if cliente_id:
+        clientes = obtener_clientes()
+        cliente = next((c for c in clientes if c['id'] == int(cliente_id)), None)
+        
+        if cliente:
+            nombre = st.text_input("Nombre del cliente", value=cliente['nombre'])
+            telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)", value=cliente['telefono'])
+            servicios = st.text_area("Servicios realizados (separados por comas)", value=cliente['servicios'])
+            precio = st.number_input("Precio", min_value=0, step=1, value=cliente['precio'])
+            formula = st.text_area("Fórmula (opcional)", value=cliente['formula'])
+            notas = st.text_area("Notas (opcional)", value=cliente['notas'])
+            imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
+            atendido_por = st.selectbox("Atendido por", options=obtener_empleados(), index=obtener_empleados().index(cliente['atendido_por']))
+            
+            if st.button("Guardar cambios"):
+                # Aquí iría el código para actualizar el cliente en la base de datos
+                pass
 
-    if cliente_seleccionado:
-        response = supabase.table("clientes").select("*").eq("nombre", cliente_seleccionado).execute()
-        cliente_actual = response.data[0]
-
-        with st.form(key="editar_cliente_form"):
-            nombre = st.text_input("Nombre", value=cliente_actual["nombre"])
-            telefono = st.text_input("Teléfono (opcional, máximo 10 dígitos)", value=cliente_actual.get("telefono", ""))
-            fecha = st.date_input("Fecha", value=cliente_actual.get("fecha"))
-            servicios = st.text_area("Servicios realizados (separados por comas)", value=cliente_actual.get("servicios", ""))
-            formula = st.text_area("Fórmula (opcional)", value=cliente_actual.get("formula", ""))
-            precio = st.number_input("Precio", min_value=0, step=1, value=cliente_actual.get("precio", 0))
-            notas = st.text_area("Notas (opcional)", value=cliente_actual.get("notas", ""))
-            submit_button = st.form_submit_button(label="Actualizar Cliente")
-
-        if submit_button:
-            data = {
-                "nombre": nombre,
-                "telefono": telefono,
-                "fecha": fecha,
-                "servicios": servicios,
-                "formula": formula,
-                "precio": precio,
-                "notas": notas
-            }
-            supabase.table("clientes").update(data).eq("id", cliente_actual["id"]).execute()
-            st.success(f"Cliente {nombre} actualizado exitosamente")
-
-st.sidebar.markdown("""
-    ## Información
-    Este es un sistema de gestión de clientes construido con Streamlit y Supabase.
-""")
 
 
 
