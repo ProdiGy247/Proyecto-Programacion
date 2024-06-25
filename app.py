@@ -57,8 +57,9 @@ def obtener_empleados():
     if response.error:
         st.error(f"Error al obtener empleados: {response.error}")
         return []
-    empleados = [empleado['nombre'] for empleado in response.data]
+    empleados = [(empleado['id'], f"{empleado['nombre']} {empleado['apellido']}") for empleado in response.data]
     return empleados
+
 
 
 def obtener_clientes():
@@ -82,9 +83,16 @@ if choice == "Agregar Cliente y Visita":
     telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)")
     fecha = st.date_input("Fecha de visita", value=date.today())
     
-    empleados = obtener_empleados()
-    if empleados:
-        atendido_por = st.selectbox("Atendido por", options=empleados)
+    # Obtener lista de empleados
+empleados_options = obtener_empleados()
+
+# Mostrar selectbox en Streamlit
+empleado_id = st.selectbox("Seleccionar Empleado", options=empleados_options, format_func=lambda x: x[1] if x else "")
+
+# Mostrar información del empleado seleccionado
+if empleado_id:
+    st.write(f"Empleado seleccionado: {empleado_id}")
+    atendido_por = st.selectbox("Atendido por", options=empleados)
     else:
         st.warning("No hay empleados disponibles. Por favor, agregue empleados en la base de datos.")
         atendido_por = None
