@@ -56,11 +56,15 @@ def guardar_imagen(cliente_id, imagen_path):
 
 def obtener_empleados():
     response = supabase.table("empleados").select("*").execute()
-    if response.error:
-        st.error(f"Error al obtener empleados: {response.error}")
+    if response.get("error"):
+        st.error(f"Error al obtener empleados: {response['error']}")
         return []
-    empleados = [(empleado['id'], f"{empleado['nombre']} {empleado['apellido']}") for empleado in response.data]
-    return empleados
+    elif response.get("data"):
+        empleados = [(empleado['id'], f"{empleado['nombre']} {empleado['apellido']}") for empleado in response['data']]
+        return empleados
+    else:
+        st.warning("No se encontraron empleados.")
+        return []
 
 def obtener_clientes():
     response = supabase.table("clientes").select("id, nombre").execute()
