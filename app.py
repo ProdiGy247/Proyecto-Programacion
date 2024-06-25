@@ -1,12 +1,14 @@
 import streamlit as st
-from supabase import create_client, Client
+from supabase import create_client
 import base64
 import os
 from datetime import date
 
 # Configuración de Supabase
-url = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyd3VmYmp2a2ZueWZqeWp1enVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTcyNzUyNDQsImV4cCI6MjAzMjg1MTI0NH0.OI88wwe7zTNLMdmaQBW7TRjoK3cU0Mx3koFs0Sam52Q"
+SUPABASE_URL = "https://lrwufbjvkfnyfjyjuzue.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxyd3VmYmp2a2ZueWZqeWp1enVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTcyNzUyNDQsImV4cCI6MjAzMjg1MTI0NH0.OI88wwe7zTNLMdmaQBW7TRjoK3cU0Mx3koFs0Sam52Q"
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Funciones de la Base de Datos
 def agregar_cliente(nombre, telefono=None, fecha_registro=None, servicios=None, precio=None, formula=None, notas=None, imagen=None, atendido_por=None):
@@ -60,8 +62,6 @@ def obtener_empleados():
     empleados = [(empleado['id'], f"{empleado['nombre']} {empleado['apellido']}") for empleado in response.data]
     return empleados
 
-
-
 def obtener_clientes():
     response = supabase.table("clientes").select("id, nombre").execute()
     return response.data
@@ -74,7 +74,7 @@ def obtener_historial(cliente_id):
 st.title("Sistema de Gestión de Clientes")
 
 menu = ["Agregar Cliente y Visita", "Buscar Cliente", "Ver Historial", "Editar Cliente"]
-choice = st.sidebar.selectbox("Menu", menu)
+choice = st.sidebar.selectbox("Menú", menu)
 
 if choice == "Agregar Cliente y Visita":
     st.subheader("Agregar Cliente y Registrar Visita")
@@ -84,18 +84,14 @@ if choice == "Agregar Cliente y Visita":
     fecha = st.date_input("Fecha de visita", value=date.today())
     
     # Obtener lista de empleados
-empleados_options = obtener_empleados()
+    empleados_options = obtener_empleados()
 
-# Mostrar selectbox en Streamlit
-empleado_id = st.selectbox("Seleccionar Empleado", options=empleados_options, format_func=lambda x: x[1] if x else "")
-
-# Mostrar información del empleado seleccionado
-if empleado_id:
-    st.write(f"Empleado seleccionado: {empleado_id}")
-    atendido_por = st.selectbox("Atendido por", options=empleados)
+    # Mostrar selectbox en Streamlit
+    if empleados_options:
+        empleado_id = st.selectbox("Seleccionar Empleado", options=empleados_options, format_func=lambda x: x[1])
     else:
         st.warning("No hay empleados disponibles. Por favor, agregue empleados en la base de datos.")
-        atendido_por = None
+        empleado_id = None
     
     servicios = st.text_area("Servicios realizados (separados por comas)")
     precio = st.number_input("Precio", min_value=0, step=1)
@@ -107,13 +103,13 @@ if empleado_id:
         if nombre:
             # Verificar si el cliente ya existe
             clientes = obtener_clientes()
-            cliente_existente = next((c for c in clientes if c['nombre'] == nombre), None)
+            cliente_existente = next((c for c in clientes if c['nombre'].lower() == nombre.lower()), None)
             
             if cliente_existente:
                 cliente_id = cliente_existente['id']
                 st.warning(f"El cliente {nombre} ya existe. Registrando visita.")
                 
-                agregar_visita(cliente_id, fecha, servicios, precio, formula, atendido_por, imagen.name if imagen else None)
+                agregar_visita(cliente_id, fecha, servicios, precio, formula, empleado_id, imagen.name if imagen else None)
                 if imagen:
                     guardar_imagen(cliente_id, imagen.name)
                 st.success(f"Visita registrada exitosamente para {nombre}")
@@ -121,7 +117,7 @@ if empleado_id:
                 nueva_imagen = None
                 if imagen and os.path.isfile(imagen.name):
                     nueva_imagen = imagen.name
-                cliente = agregar_cliente(nombre, telefono, fecha, servicios, precio, formula, notas, nueva_imagen, atendido_por)
+                cliente = agregar_cliente(nombre, telefono, fecha, servicios, precio, formula, notas, nueva_imagen, empleado_id)
                 if imagen:
                     guardar_imagen(cliente['id'], imagen.name)
                 st.success(f"Cliente y visita registrada exitosamente para {nombre}")
@@ -132,11 +128,11 @@ elif choice == "Buscar Cliente":
     
     if search_term:
         clientes = obtener_clientes()
-        resultado_busqueda = [cliente for cliente in clientes if search_term.lower() in cliente['nombre'].lower() or search_term in cliente['telefono']]
+        resultado_busqueda = [cliente for cliente in clientes if search_term.lower() in cliente['nombre'].lower() or search_term in cliente.get('telefono', '')]
         
         if resultado_busqueda:
             for cliente in resultado_busqueda:
-                st.write(f"Nombre: {cliente['nombre']}, Teléfono: {cliente['telefono']}")
+                st.write(f"Nombre: {cliente['nombre']}, Teléfono: {cliente.get('telefono', 'No disponible')}")
         else:
             st.warning("No se encontraron resultados.")
             
@@ -163,19 +159,17 @@ elif choice == "Editar Cliente":
         
         if cliente:
             nombre = st.text_input("Nombre del cliente", value=cliente['nombre'])
-            telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)", value=cliente['telefono'])
-            servicios = st.text_area("Servicios realizados (separados por comas)", value=cliente['servicios'])
-            precio = st.number_input("Precio", min_value=0, step=1, value=cliente['precio'])
-            formula = st.text_area("Fórmula (opcional)", value=cliente['formula'])
-            notas = st.text_area("Notas (opcional)", value=cliente['notas'])
+            telefono = st.text_input("Teléfono del cliente (opcional, máximo 10 dígitos)", value=cliente.get('telefono', ''))
+            servicios = st.text_area("Servicios realizados (separados por comas)", value=cliente.get('servicios', ''))
+            precio = st.number_input("Precio", min_value=0, step=1, value=cliente.get('precio', 0))
+            formula = st.text_area("Fórmula (opcional)", value=cliente.get('formula', ''))
+            notas = st.text_area("Notas (opcional)", value=cliente.get('notas', ''))
             imagen = st.file_uploader("Subir imagen (opcional)", type=["jpg", "png", "jpeg"])
-            atendido_por = st.selectbox("Atendido por", options=obtener_empleados(), index=obtener_empleados().index(cliente['atendido_por']))
+            atendido_por = st.selectbox("Atendido por", options=obtener_empleados(), index=empleados_options.index(cliente['atendido_por']))
             
             if st.button("Guardar cambios"):
                 # Aquí iría el código para actualizar el cliente en la base de datos
                 pass
-
-
 
 
 
